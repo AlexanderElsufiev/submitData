@@ -125,11 +125,13 @@ class Fstr:
 
 #########################################################
 
-
-    def POST(self, submitData):
+    # ПРОГРАММА ЗАПУСКАЕТСЯ ИЗ API/VIEWS.PY ИЗ МЕТОДА POST
+    # def my_post(self, submitData):
+    def my_post(self, raw_data, images):
         """ целевая программа собственно записи в базу данных
         ОТЛИЧИЕ ОТ СТАРОГО ВАРИАНТА - МАКСИМАЛЬНЫЙ ID ФОТО БЕРЁТСЯ ИЗ ТАБЛИЦЫ ПЕРЕВАЛОВ,
         ДАЖЕ ЕСЛИ ФОТО ЕЩЁ НЕ ЗАГРУЖЕНО ПРЕЖНИМ ПОЛЬЗОВАТЕЛЕМ"""
+        submitData={'raw_data':raw_data,'images':images}
         rez=False
         rz=self.connect()
         conn = self.connection
@@ -140,18 +142,16 @@ class Fstr:
         # ОДНОВРЕМЕННО МАКСИМАЛЬНЫЕ ID ПЕРЕВАЛА И ID ФОТОГРАФИИ В ПЕРЕВАЛЕ
         rez = self.zapusk_sql_progr(
             'select id,images from pereval_added where id in (select max(id) as id_ from pereval_added)')
-        print(f'rez={rez}')
         max_id_pereval = rez['rows'][0][0]
         max_fotos = rez['rows'][0][1]['images']
         max_id_image = 0
         for im in max_fotos:
             max_id_image = max(max_id_image, im['id'])
-        # print(f'max_id_pereval={max_id_pereval}')
-        # print(f'max_id_image={max_id_image}')
 
         # преобразование данных с добавлением новых id
         img = []
-        images=submitData['images']
+        # images=submitData['images']
+        images=images['images']
         for im in images:
             max_id_image += 1
             im['id'] = max_id_image
@@ -161,7 +161,6 @@ class Fstr:
         submitData['id'] = max_id_pereval
         submitData['img'] = {'images': img} #только описания фотографий
 
-        # print('запись в базу')
         try:
             # запись данных о перевале
             cursor.execute("""
@@ -174,7 +173,6 @@ class Fstr:
             ))
 
             conn.commit()  # КОММИТ
-            # print('Прошла запись основных данных')
 
             # тепер запись собственно фотографий, по одной!
             for im in images:
@@ -184,8 +182,6 @@ class Fstr:
                     """, (im['id'],im['img'])
                                )
                 conn.commit()  # КОММИТ
-
-            print('запись в базу закончена успешно')
             rez=True
 
         except Exception as e:
@@ -196,84 +192,7 @@ class Fstr:
         finally:# Закрытие курсора и соединения
             cursor.close()
             conn.close()
-
-        print('запись в базу закончена')
-        return rez
-
-
-
-
-
-
-#########################################################
-
-
-    def POST_old(self, submitData):
-        """ целевая программа собственно записи в базу данных """
-        rez=False
-        rz=self.connect()
-        conn = self.connection
-        cursor = conn.cursor() # Создание курсора для выполнения SQL-запросов
-
-        # print('предварительная обработка')
-        # чтение текущих максимальных значений id
-        rez = self.zapusk_sql_progr('select max(id) from pereval_images')
-        max_id_image = rez['rows'][0][0]
-        # print(f'max_id_image={max_id_image}')
-
-        rez = self.zapusk_sql_progr('select max(id) from pereval_added')
-        max_id_pereval = rez['rows'][0][0]
-        # print(f'max_id_pereval={max_id_pereval}')
-
-        # преобразование данных с добавлением новых id
-        img = []
-        images=submitData['images']
-        for im in images:
-            max_id_image += 1
-            im['id'] = max_id_image
-            img.append({'title': im['title'], 'id': im['id']})
-
-        max_id_pereval += 1
-        submitData['id'] = max_id_pereval
-        submitData['img'] = {'images': img} #только описания фотографий
-
-        # print('запись в базу')
-        try:
-            # запись данных о перевале
-            cursor.execute("""
-                    INSERT INTO "public"."pereval_added" ("id", "date_added", "raw_data", "images")
-                    VALUES (%s, NOW(), %s, %s)
-                """, (
-                submitData['id'],
-                json.dumps(submitData["raw_data"]),
-                json.dumps(submitData["img"])
-            ))
-
-            conn.commit()  # КОММИТ
-            # print('Прошла запись основных данных')
-
-            # тепер запись собственно фотографий, по одной!
-            for im in images:
-                cursor.execute("""
-                        INSERT INTO "public"."pereval_images" ("id", "date_added", "img")
-                        VALUES (%s, NOW(), %s)
-                    """, (im['id'],im['img'])
-                               )
-                conn.commit()  # КОММИТ
-
-            print('запись в базу закончена успешно')
-            rez=True
-
-        except Exception as e:
-            print(f"Ошибка при записи: {e}")
-            conn.rollback()  # Откатываем изменения при ошибке
-            rez=False
-
-        finally:# Закрытие курсора и соединения
-            cursor.close()
-            conn.close()
-
-        print('запись в базу закончена')
+        print('В БАЗУ ДАННЫХ СДЕЛАНА ЗАПИСЬ')
         return rez
 
 
