@@ -11,15 +11,17 @@ class UserSerializer(serializers.Serializer):
     otc = serializers.CharField(max_length=20, required=False, allow_blank=True)
 
 class CoordsSerializer(serializers.Serializer):
-    latitude = serializers.CharField(max_length=10, required=False, allow_blank=True)
-    longitude = serializers.CharField(max_length=10, required=False, allow_blank=True)
-    height = serializers.CharField(max_length=10, required=False, allow_blank=True)
+    latitude = serializers.FloatField(required=False, allow_null=True)
+    longitude = serializers.FloatField(required=False, allow_null=True)
+    height = serializers.IntegerField(required=False, allow_null=True)
+
 
 class LevelSerializer(serializers.Serializer):
     winter = serializers.CharField(max_length=5, required=False, allow_blank=True)
+    spring = serializers.CharField(max_length=5, required=False, allow_blank=True)
     summer = serializers.CharField(max_length=5, required=False, allow_blank=True)
     autumn = serializers.CharField(max_length=5, required=False, allow_blank=True)
-    spring = serializers.CharField(max_length=5, required=False, allow_blank=True)
+
 
 class ImageSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=200)
@@ -32,6 +34,6 @@ class SubmitDataSerializer(serializers.Serializer):
     connect = serializers.CharField(max_length=500, required=False, allow_blank=True)
     user = UserSerializer()
     coords = CoordsSerializer()
-    level = LevelSerializer()
+    # level = LevelSerializer()
     images = ImageSerializer(many=True, required=True)
 

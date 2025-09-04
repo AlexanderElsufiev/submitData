@@ -1,5 +1,7 @@
 
-
+# ЗАПУСК = python manage.py runserver
+# ПРОСМОТР НА = Откройте браузер: http://127.0.0.1:8000/api/submit/
+# УДАЛЕНИЕ ПЛОХИХ МИГРАЦИЙ =   python manage.py migrate api zero --fake
 
 #!/usr/bin/env python
 """Django's command-line utility for administrative tasks."""

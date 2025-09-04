@@ -55,10 +55,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'project.wsgi.application'
 
+# БАЗА ДАННЫХ - ИСПРАВЛЕНО НА POSTGRESQL
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME', 'pereval_db'),
+        'USER': os.getenv('FSTR_DB_LOGIN', 'postgres'),
+        'PASSWORD': os.getenv('FSTR_DB_PASS', 'password'),
+        'HOST': os.getenv('FSTR_DB_HOST', 'localhost'),
+        'PORT': os.getenv('FSTR_DB_PORT', '5432'),
     }
 }
 
@@ -83,9 +88,6 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -104,4 +106,3 @@ REST_FRAMEWORK = {
 # Максимальный размер загружаемых файлов
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
-
