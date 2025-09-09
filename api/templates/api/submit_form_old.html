@@ -270,115 +270,28 @@
             button.parentElement.remove();
         }
 
-
         document.getElementById('submitForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            // Создаем правильную JSON структуру
-            const jsonData = {
-                beautyTitle: document.getElementById('beautyTitle').value,
-                title: document.getElementById('title').value,
-                other_titles: document.getElementById('other_titles').value,
-                connect: document.getElementById('connect').value,
-                add_time: new Date().toISOString().slice(0, 19).replace('T', ' '),
-                user: {
-                    email: document.getElementById('user_email').value,
-                    phone: document.getElementById('user_phone').value,
-                    fam: document.getElementById('user_fam').value,
-                    name: document.getElementById('user_name').value,
-                    otc: document.getElementById('user_otc').value
-                },
-                coords: {
-                    latitude: parseFloat(document.getElementById('coords_latitude').value) || 0,
-                    longitude: parseFloat(document.getElementById('coords_longitude').value) || 0,
-                    height: parseFloat(document.getElementById('coords_height').value) || 0
-                },
-                level: {
-                    winter: document.getElementById('level_winter').value,
-                    summer: document.getElementById('level_summer').value,
-                    autumn: document.getElementById('level_autumn').value,
-                    spring: document.getElementById('level_spring').value
-                }
-            };
-
-            // Обрабатываем изображения
-            const imageInputs = document.querySelectorAll('input[type="file"]');
-            const imagesArray = [];
-
-            for (let index = 0; index < imageInputs.length; index++) {
-                const input = imageInputs[index];
-                if (input.files[0]) {
-                    const titleInput = document.getElementById(`image_title_${index + 1}`);
-                    const title = titleInput ? titleInput.value : `Изображение ${index + 1}`;
-
-                    // Читаем файл как base64
-                    const reader = new FileReader();
-                    await new Promise((resolve) => {
-                        reader.onload = function(e) {
-                            imagesArray.push({
-                                title: title,
-                                data: e.target.result.split(',')[1] // убираем префикс data:image/...;base64,
-                            });
-                            resolve();
-                        };
-                        reader.readAsDataURL(input.files[0]);
-                    });
-                }
-            }
-
-            // Добавляем изображения к JSON данным
-            jsonData.images = imagesArray;
-
+            const formData = new FormData(this);
             const responseDiv = document.getElementById('response');
             const responseText = document.getElementById('responseText');
 
             try {
                 const response = await fetch('/api/submitData/', {
                     method: 'POST',
-                    body: JSON.stringify(jsonData),
+                    body: formData,
                     headers: {
-                        'Content-Type': 'application/json',
                         'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
                     }
                 });
 
-<!--СТАРЫЙ ВАРИАНТ ОТВЕТА, ПРИШЕДШИЙ ПОСЛЕ ОТСУТСТВИЯ ОШИБКИ-->
-<!--                const data = await response.json();-->
-<!--                responseDiv.className = response.ok ? 'response success' : 'response error';-->
-<!--                responseDiv.style.display = 'block';-->
-<!--                responseText.textContent = JSON.stringify(data, null, 2);-->
-
-<!--НОВЫЙ ВАРИАНТ ОТВЕТА - ПОКАЗЫВАЕТСЯ РОВНО ТО, ЧТО БЫЛО ПОСЛАНО, ТОЛЬКО БЕЗ ФОТО-->
                 const data = await response.json();
+
                 responseDiv.className = response.ok ? 'response success' : 'response error';
                 responseDiv.style.display = 'block';
-
-<!--                if (response.ok) {-->
-<!--                    // Показываем отправленные данные без изображений-->
-<!--                    const sentDataWithoutImages = {-->
-<!--                        ...jsonData,-->
-<!--                        images: `[${jsonData.images ? jsonData.images.length : 0} изображений отправлено]`-->
-<!--                    };-->
-<!--                    responseText.textContent = JSON.stringify(sentDataWithoutImages, null, 2);-->
-<!--                } else {-->
-<!--                    responseText.textContent = JSON.stringify(data, null, 2);-->
-<!--                }-->
-
-                if (response.ok) {
-                    // Показываем отправленные данные с названиями изображений (без данных файлов)
-                    const imageInfo = jsonData.images ? jsonData.images.map(img => ({
-                        title: img.title,
-                        size: `${Math.round(img.data.length / 1024)} KB`
-                    })) : [];
-
-                    const sentDataWithoutImages = {
-                        ...jsonData,
-                        images: imageInfo
-                    };
-                    responseText.textContent = JSON.stringify(sentDataWithoutImages, null, 2);
-                } else {
-                    responseText.textContent = JSON.stringify(data, null, 2);
-                }
+                responseText.textContent =  JSON.stringify(data, null, 2);
+<!--                responseText.textContent = ' УСПЕШНО ОТПРАВЛЕНО: <br> '+ responseText.textContent;-->
 
 
             } catch (error) {
@@ -387,10 +300,6 @@
                 responseText.textContent = 'Ошибка при отправке запроса: ' + error.message;
             }
         });
-
-
-
-
     </script>
 </body>
 </html>

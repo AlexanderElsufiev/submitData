@@ -9,6 +9,8 @@ from .models import * #PerevalAdded, PerevalUser, PerevalCoords, PerevalImage, P
 from .serializers import SubmitDataSerializer
 
 
+
+
 class SubmitDataAPIView(APIView):
     """
     REST API endpoint для отправки данных горного перевала
@@ -17,36 +19,23 @@ class SubmitDataAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         try:
-            # Получаем вложенные данные пользователя
-            user_data = request.data.get('user', {})
-
             # Создаем или получаем пользователя
             user, created = PerevalUser.objects.get_or_create(
-                email=user_data.get('email', ''),
+                email=request.data.get('user_email', ''),
                 defaults={
-                    'phone': user_data.get('phone', ''),
-                    'fam': user_data.get('fam', ''),
-                    'name': user_data.get('name', ''),
-                    'otc': user_data.get('otc', '')
+                    'phone': request.data.get('user_phone', ''),
+                    'fam': request.data.get('user_fam', ''),
+                    'name': request.data.get('user_name', ''),
+                    'otc': request.data.get('user_otc', '')
                 }
             )
 
-            # Получаем вложенные данные координат
-            coords_data = request.data.get('coords', {})
-
             # Создаем координаты
             coords = PerevalCoords.objects.create(
-                latitude=coords_data.get('latitude', ''),
-                longitude=coords_data.get('longitude', ''),
-                height=coords_data.get('height', '')
-                # latitude = request.data.get('coords_latitude', ''),
-                # longitude = request.data.get('coords_longitude', ''),
-                # height = request.data.get('coords_height', '')
-
+                latitude=request.data.get('coords_latitude', ''),
+                longitude=request.data.get('coords_longitude', ''),
+                height=request.data.get('coords_height', '')
             )
-
-            # Получаем вложенные данные уровней сложности
-            level_data = request.data.get('level', {})
 
             # Создаем основную запись перевала
             pereval = PerevalAdded.objects.create(
@@ -55,25 +44,46 @@ class SubmitDataAPIView(APIView):
                 other_titles=request.data.get('other_titles', ''),
                 connect=request.data.get('connect', ''),
                 add_time=datetime.now(),
-                winter=level_data.get('winter', ''),
-                spring=level_data.get('spring', ''),
-                summer=level_data.get('summer', ''),
-                autumn=level_data.get('autumn', ''),
+                winter=request.data.get('level_winter', ''),
+                spring=request.data.get('level_spring', ''),
+                summer=request.data.get('level_summer', ''),
+                autumn=request.data.get('level_autumn', ''),
                 user=user,
                 coords=coords,
                 # level=level
             )
 
-            # Обрабатываем изображения из массива images
-            images_data = request.data.get('images', [])
-            images_count = 0
+            # Обрабатываем изображения
+            uploaded_files = request.FILES
+            image_titles = []
 
-            for image_data in images_data:
-                if 'title' in image_data and 'data' in image_data:
+            # Собираем заголовки изображений
+            for key in request.data.keys():
+                if key.startswith('image_title_'):
+                    index = key.split('_')[-1]
+                    image_titles.append({
+                        'index': index,
+                        'title': request.data[key]
+                    })
+
+            # Сортируем по индексу
+            image_titles.sort(key=lambda x: int(x['index']))
+
+            # Создаем записи изображений
+            images_count = 0
+            for title_info in image_titles:
+                file_key = f'image_file_{title_info["index"]}'
+                if file_key in uploaded_files:
+                    image_file = uploaded_files[file_key]
+
+                    # Читаем содержимое файла и конвертируем в hex
+                    image_content = image_file.read()
+                    hex_content = image_content.hex()
+
                     # Создаем запись изображения в таблице pereval_images_as_is
                     image_as_is = PerevalImageAsIs.objects.create(
-                        title=image_data['title'],
-                        img=image_data['data']  # Предполагаем, что данные уже в hex формате
+                        title=title_info["title"],
+                        img=hex_content
                     )
 
                     # Создаем связь между перевалом и изображением
@@ -87,6 +97,7 @@ class SubmitDataAPIView(APIView):
                 # Если нет изображений, удаляем созданные записи
                 pereval.delete()
                 coords.delete()
+                # level.delete()
                 if created:  # Удаляем пользователя только если он был создан
                     user.delete()
 
@@ -113,6 +124,7 @@ class SubmitDataAPIView(APIView):
                 "error": f"Ошибка при обработке данных: {str(e)}",
                 "status": "error"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 class SubmitFormView(TemplateView):
