@@ -76,22 +76,6 @@ class PerevalImageAsIs(models.Model):
 
     class Meta:
         db_table = 'pereval_images_as_is'
-#
-#
-# class PerevalImage(models.Model):
-#     """Модель связи между перевалами и изображениями"""
-#     pereval = models.ForeignKey(PerevalAdded, on_delete=models.CASCADE, related_name='images')
-#     image = models.ForeignKey(PerevalImageAsIs, on_delete=models.CASCADE, related_name='perevals')
-#
-#     def __str__(self):
-#         return f"Перевал {self.pereval.title} - Изображение {self.image.title}"
-#
-#     class Meta:
-#         db_table = 'pereval_images'
-#         # Ограничение уникальности: одно изображение не может быть привязано к одному перевалу дважды
-#         unique_together = ('pereval', 'image')
-#         # unique_together = ('image')
-#         # unique = ('image')
 
 
 class PerevalImage(models.Model):

@@ -1,9 +1,17 @@
 
 # ЗАПУСК = python manage.py runserver
-# ПРОСМОТР НА = Откройте браузер: http://127.0.0.1:8000/api/submit/
+# ВВОД ДАННЫХ   = http://127.0.0.1:8000/api/submit/
+# ЧТЕНИЕ ВСЕХ ПЕРЕВАЛОВ ДАННОГО ПОЛЬЗОВАТЕЛЯ
+#               = http://127.0.0.1:8000/api/submitData/?user__email=proba@email.tld1
+# ЧТЕНИЕ КОНКРЕТНОГО ПЕРЕВАЛА
+#               = http://127.0.0.1:8000/api/submitData/4/
+
+
+
 # УДАЛЕНИЕ ПЛОХИХ МИГРАЦИЙ =   python manage.py migrate api zero --fake
 
-#!/usr/bin/env python
+# http://127.0.0.1:8000/api/submitData/ - не работает пока
+
 """Django's command-line utility for administrative tasks."""
 import os
 import sys

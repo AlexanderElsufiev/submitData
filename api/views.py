@@ -6,15 +6,19 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import * #PerevalAdded, PerevalUser, PerevalCoords, PerevalImage, PerevalImageAsIs
-from .serializers import SubmitDataSerializer
 
+from .serializers import *  #SubmitDataSerializer, PerevalDetailSerializer, PerevalUpdateSerializer, PerevalListSerializer
 
 class SubmitDataAPIView(APIView):
     """
     REST API endpoint для отправки данных горного перевала
     Использует Django ORM для записи в PostgreSQL
+
+    POST /submitData/ — создать новую запись
+    GET /submitData/?user__email=<email> — список записей пользователя
     """
 
+    # ИЗ 1 СПРИНТА ЗАПИСЬ
     def post(self, request, *args, **kwargs):
         try:
             # Получаем вложенные данные пользователя
@@ -114,13 +118,66 @@ class SubmitDataAPIView(APIView):
                 "status": "error"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    # ДЛЯ 2 СПРИНТА GET
+    def get(self, request, *args, **kwargs):
+        """GET /submitData/?user__email=<email> — список данных обо всех объектах пользователя"""
+        try:
+            email = request.query_params.get('user__email')
+
+            if not email:
+                return Response(
+                    {"message": "Параметр user__email обязателен"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Ищем пользователя
+            try:
+                user = PerevalUser.objects.get(email=email)
+            except PerevalUser.DoesNotExist:
+                return Response([], status=status.HTTP_200_OK)
+
+            # Получаем все перевалы пользователя
+            perevals = PerevalAdded.objects.filter(user=user).select_related('coords').order_by('-date_added')
+
+            # Формируем данные для ответа
+            data = []
+            for pereval in perevals:
+                pereval_data = {
+                    'id': pereval.id,
+                    'beauty_title': pereval.beauty_title,
+                    'title': pereval.title,
+                    'other_titles': pereval.other_titles,
+                    'connect': pereval.connect,
+                    'add_time': pereval.add_time,
+                    'coords': {
+                        'latitude': pereval.coords.latitude,
+                        'longitude': pereval.coords.longitude,
+                        'height': pereval.coords.height
+                    },
+                    'level': {
+                        'winter': pereval.winter,
+                        'spring': pereval.spring,
+                        'summer': pereval.summer,
+                        'autumn': pereval.autumn
+                    },
+                    'status': pereval.status,
+                    'date_added': pereval.date_added
+                }
+                data.append(pereval_data)
+
+            return Response(data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"message": f"Ошибка при получении списка: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 
 class SubmitFormView(TemplateView):
     """
     Представление для отображения формы тестирования
     """
     template_name = 'api/submit_form.html'
-
-
-
 
