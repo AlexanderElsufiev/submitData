@@ -206,18 +206,21 @@ print('============================')
 
 
 # конкретно перевал 10
-idd=10
-print('============================')
+idd=16
+print('============================pereval_added')
 rez = dd.zapusk_sql_progr('SELECT * from pereval_added')
 # print(f'rez={rez}')
 col=rez['col']
 rows=rez['rows']
 print(f'col={col}')
+mid=0
 for zn in rows:
+    mid=max(mid,zn[0])
     if zn[0]==idd:
         print(f'zn={zn}')
+print(f'mid={mid}')
 
-print('============================')
+print('============================pereval_images')
 rez = dd.zapusk_sql_progr('SELECT * from pereval_images')
 # print(f'rez={rez}')
 col=rez['col']
@@ -235,14 +238,15 @@ for zn in rows:
 
 
 
-print('============================')
+print('============================pereval_images_as_is')
 rez = dd.zapusk_sql_progr('SELECT * from pereval_images_as_is')
 # print(f'rez={rez}')
 col=rez['col']
 rows=rez['rows']
 print(f'col={col}')
 for zn in rows:
-    if zn[0] in (12, 14, 15):
+    # if zn[0] in (12, 14, 15,16,17,33,34):
+    if zn[0] in (35,):
         # print(f'zn={zn}')
         print(f'zn=={(zn[0],zn[1],"imggg")}')
         print('---------------------------------------------------')

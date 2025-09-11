@@ -43,6 +43,10 @@ class SubmitDataAPIView(APIView):
                 latitude=coords_data.get('latitude', ''),
                 longitude=coords_data.get('longitude', ''),
                 height=coords_data.get('height', '')
+                # latitude = request.data.get('coords_latitude', ''),
+                # longitude = request.data.get('coords_longitude', ''),
+                # height = request.data.get('coords_height', '')
+
             )
 
             # Получаем вложенные данные уровней сложности
@@ -50,7 +54,7 @@ class SubmitDataAPIView(APIView):
 
             # Создаем основную запись перевала
             pereval = PerevalAdded.objects.create(
-                beauty_title=request.data.get('beauty_title', ''),
+                beauty_title=request.data.get('beautyTitle', ''),
                 title=request.data.get('title', ''),
                 other_titles=request.data.get('other_titles', ''),
                 connect=request.data.get('connect', ''),
@@ -116,7 +120,6 @@ class SubmitDataAPIView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     # ДЛЯ 2 СПРИНТА GET
-
     def get(self, request, *args, **kwargs):
         """GET /submitData/?user__email=<email> — список данных обо всех объектах пользователя"""
         try:
@@ -128,22 +131,49 @@ class SubmitDataAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
+            # Ищем пользователя
             try:
                 user = PerevalUser.objects.get(email=email)
             except PerevalUser.DoesNotExist:
                 return Response([], status=status.HTTP_200_OK)
 
+            # Получаем все перевалы пользователя
             perevals = PerevalAdded.objects.filter(user=user).select_related('coords').order_by('-date_added')
 
-            # СЕРИАЛИЗАТОР вместо ручного формирования
-            serializer = PerevalListSerializer(perevals, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            # Формируем данные для ответа
+            data = []
+            for pereval in perevals:
+                pereval_data = {
+                    'id': pereval.id,
+                    'beauty_title': pereval.beauty_title,
+                    'title': pereval.title,
+                    'other_titles': pereval.other_titles,
+                    'connect': pereval.connect,
+                    'add_time': pereval.add_time,
+                    'coords': {
+                        'latitude': pereval.coords.latitude,
+                        'longitude': pereval.coords.longitude,
+                        'height': pereval.coords.height
+                    },
+                    'level': {
+                        'winter': pereval.winter,
+                        'spring': pereval.spring,
+                        'summer': pereval.summer,
+                        'autumn': pereval.autumn
+                    },
+                    'status': pereval.status,
+                    'date_added': pereval.date_added
+                }
+                data.append(pereval_data)
+
+            return Response(data, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response(
                 {"message": f"Ошибка при получении списка: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
 
 
 class SubmitFormView(TemplateView):
@@ -170,9 +200,46 @@ class PerevalDetailUpdateAPIView(APIView):
         try:
             pereval = PerevalAdded.objects.select_related('user', 'coords').prefetch_related('images__image').get(pk=pk)
 
-            # СЕРИАЛИЗАТОР вместо ручного формирования
-            serializer = PerevalDetailSerializer(pereval)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            # Формируем данные для ответа
+            data = {
+                'id': pereval.id,
+                'beauty_title': pereval.beauty_title,
+                'title': pereval.title,
+                'other_titles': pereval.other_titles,
+                'connect': pereval.connect,
+                'add_time': pereval.add_time,
+                'user': {
+                    'email': pereval.user.email,
+                    'phone': pereval.user.phone,
+                    'fam': pereval.user.fam,
+                    'name': pereval.user.name,
+                    'otc': pereval.user.otc
+                },
+                'coords': {
+                    'latitude': pereval.coords.latitude,
+                    'longitude': pereval.coords.longitude,
+                    'height': pereval.coords.height
+                },
+                'level': {
+                    'winter': pereval.winter,
+                    'spring': pereval.spring,
+                    'summer': pereval.summer,
+                    'autumn': pereval.autumn
+                },
+                'status': pereval.status,
+                'date_added': pereval.date_added,
+                'add_time': pereval.add_time,
+                'images': []
+            }
+
+            # Добавляем изображения
+            for pereval_image in pereval.images.all():
+                data['images'].append({
+                    'title': pereval_image.image.title,
+                    'data': pereval_image.image.img
+                })
+
+            return Response(data, status=status.HTTP_200_OK)
 
         except PerevalAdded.DoesNotExist:
             return Response(
@@ -185,51 +252,54 @@ class PerevalDetailUpdateAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-
-
     def patch(self, request, pk, *args, **kwargs):
         """PATCH /submitData/<id> — отредактировать существующую запись, если она в статусе new"""
         try:
             pereval = PerevalAdded.objects.select_related('user', 'coords').get(pk=pk)
 
+            # Проверяем статус
             if pereval.status != 'new':
                 return Response({
                     "state": 0,
                     "message": f"Запись нельзя редактировать, так как она имеет статус: {pereval.status}"
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            # СЕРИАЛИЗАТОР для валидации
-            serializer = PerevalUpdateSerializer(data=request.data, partial=True)
-            if not serializer.is_valid():
-                return Response({
-                    "state": 0,
-                    "message": f"Ошибка валидации данных: {serializer.errors}"
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            validated_data = serializer.validated_data
-
-            # Обновляем основные поля
-            for field in ['beauty_title', 'title', 'other_titles', 'connect']:
-                if field in validated_data:
-                    setattr(pereval, field, validated_data[field])
+            # Обновляем основные поля перевала (кроме пользовательских данных)
+            if 'beauty_title' in request.data:
+                pereval.beauty_title = request.data['beauty_title']
+            if 'title' in request.data:
+                pereval.title = request.data['title']
+            if 'other_titles' in request.data:
+                pereval.other_titles = request.data['other_titles']
+            if 'connect' in request.data:
+                pereval.connect = request.data['connect']
 
             # Обновляем уровни сложности
-            if 'level' in validated_data:
-                level_data = validated_data['level']
-                for season in ['winter', 'spring', 'summer', 'autumn']:
-                    if season in level_data:
-                        setattr(pereval, season, level_data[season])
+            level_data = request.data.get('level', {})
+            if level_data:
+                if 'winter' in level_data:
+                    pereval.winter = level_data['winter']
+                if 'spring' in level_data:
+                    pereval.spring = level_data['spring']
+                if 'summer' in level_data:
+                    pereval.summer = level_data['summer']
+                if 'autumn' in level_data:
+                    pereval.autumn = level_data['autumn']
 
             # Обновляем координаты
-            if 'coords' in validated_data:
-                coords_data = validated_data['coords']
-                for coord in ['latitude', 'longitude', 'height']:
-                    if coord in coords_data:
-                        setattr(pereval.coords, coord, coords_data[coord])
+            coords_data = request.data.get('coords', {})
+            if coords_data:
+                if 'latitude' in coords_data:
+                    pereval.coords.latitude = coords_data['latitude']
+                if 'longitude' in coords_data:
+                    pereval.coords.longitude = coords_data['longitude']
+                if 'height' in coords_data:
+                    pereval.coords.height = coords_data['height']
                 pereval.coords.save()
 
             # Обновляем изображения
-            if 'images' in validated_data:
+            images_data = request.data.get('images', [])
+            if images_data:
                 # Удаляем старые изображения
                 old_images = pereval.images.all()
                 for old_image in old_images:
@@ -237,18 +307,17 @@ class PerevalDetailUpdateAPIView(APIView):
                     old_image.delete()
 
                 # Создаем новые изображения
-                for image_data in validated_data['images']:
-                    image_as_is = PerevalImageAsIs.objects.create(
-                        title=image_data['title'],
-                        img=image_data['data']
-                    )
-                    PerevalImage.objects.create(
-                        pereval=pereval,
-                        image=image_as_is
-                    )
+                for image_data in images_data:
+                    if 'title' in image_data and 'data' in image_data:
+                        image_as_is = PerevalImageAsIs.objects.create(
+                            title=image_data['title'],
+                            img=image_data['data']
+                        )
+                        PerevalImage.objects.create(
+                            pereval=pereval,
+                            image=image_as_is
+                        )
 
-            # Обновляем время изменения
-            from django.utils import timezone
             pereval.date_added = timezone.now()
             pereval.save()
 
@@ -267,6 +336,9 @@ class PerevalDetailUpdateAPIView(APIView):
                 "state": 0,
                 "message": f"Ошибка при обновлении записи: {str(e)}"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
 
 
 

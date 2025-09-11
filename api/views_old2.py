@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import * #PerevalAdded, PerevalUser, PerevalCoords, PerevalImage, PerevalImageAsIs
-from django.utils import timezone
+
 from .serializers import *  #SubmitDataSerializer, PerevalDetailSerializer, PerevalUpdateSerializer, PerevalListSerializer
 
 class SubmitDataAPIView(APIView):
@@ -50,7 +50,7 @@ class SubmitDataAPIView(APIView):
 
             # Создаем основную запись перевала
             pereval = PerevalAdded.objects.create(
-                beauty_title=request.data.get('beauty_title', ''),
+                beauty_title=request.data.get('beautyTitle', ''),
                 title=request.data.get('title', ''),
                 other_titles=request.data.get('other_titles', ''),
                 connect=request.data.get('connect', ''),
@@ -104,7 +104,6 @@ class SubmitDataAPIView(APIView):
                     "user": f"{user.fam} {user.name} {user.otc}",
                     "coords": f"Lat: {coords.latitude}, Lon: {coords.longitude}",
                     "images_count": images_count,
-                    "add_time": pereval.add_time.strftime("%Y-%m-%d %H:%M:%S"), # добавка
                     "date_added": pereval.date_added.strftime("%Y-%m-%d %H:%M:%S")
                 }
             }, status=status.HTTP_201_CREATED)
@@ -116,7 +115,6 @@ class SubmitDataAPIView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     # ДЛЯ 2 СПРИНТА GET
-
     def get(self, request, *args, **kwargs):
         """GET /submitData/?user__email=<email> — список данных обо всех объектах пользователя"""
         try:
@@ -128,16 +126,42 @@ class SubmitDataAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
+            # Ищем пользователя
             try:
                 user = PerevalUser.objects.get(email=email)
             except PerevalUser.DoesNotExist:
                 return Response([], status=status.HTTP_200_OK)
 
+            # Получаем все перевалы пользователя
             perevals = PerevalAdded.objects.filter(user=user).select_related('coords').order_by('-date_added')
 
-            # СЕРИАЛИЗАТОР вместо ручного формирования
-            serializer = PerevalListSerializer(perevals, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            # Формируем данные для ответа
+            data = []
+            for pereval in perevals:
+                pereval_data = {
+                    'id': pereval.id,
+                    'beauty_title': pereval.beauty_title,
+                    'title': pereval.title,
+                    'other_titles': pereval.other_titles,
+                    'connect': pereval.connect,
+                    'add_time': pereval.add_time,
+                    'coords': {
+                        'latitude': pereval.coords.latitude,
+                        'longitude': pereval.coords.longitude,
+                        'height': pereval.coords.height
+                    },
+                    'level': {
+                        'winter': pereval.winter,
+                        'spring': pereval.spring,
+                        'summer': pereval.summer,
+                        'autumn': pereval.autumn
+                    },
+                    'status': pereval.status,
+                    'date_added': pereval.date_added
+                }
+                data.append(pereval_data)
+
+            return Response(data, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response(
@@ -146,130 +170,10 @@ class SubmitDataAPIView(APIView):
             )
 
 
+
 class SubmitFormView(TemplateView):
     """
     Представление для отображения формы тестирования
     """
     template_name = 'api/submit_form.html'
-
-
-
-
-#################################### для 2 спринта
-
-
-
-class PerevalDetailUpdateAPIView(APIView):
-    """
-    GET /submitData/<id> — получить одну запись по id
-    PATCH /submitData/<id> — отредактировать запись, если статус 'new'
-    """
-
-    def get(self, request, pk, *args, **kwargs):
-        """GET /submitData/<id> — получить одну запись (перевал) по её id"""
-        try:
-            pereval = PerevalAdded.objects.select_related('user', 'coords').prefetch_related('images__image').get(pk=pk)
-
-            # СЕРИАЛИЗАТОР вместо ручного формирования
-            serializer = PerevalDetailSerializer(pereval)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        except PerevalAdded.DoesNotExist:
-            return Response(
-                {"message": "Перевал не найден"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            return Response(
-                {"message": f"Ошибка при получении данных: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-
-    def patch(self, request, pk, *args, **kwargs):
-        """PATCH /submitData/<id> — отредактировать существующую запись, если она в статусе new"""
-        try:
-            pereval = PerevalAdded.objects.select_related('user', 'coords').get(pk=pk)
-
-            if pereval.status != 'new':
-                return Response({
-                    "state": 0,
-                    "message": f"Запись нельзя редактировать, так как она имеет статус: {pereval.status}"
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            # СЕРИАЛИЗАТОР для валидации
-            serializer = PerevalUpdateSerializer(data=request.data, partial=True)
-            if not serializer.is_valid():
-                return Response({
-                    "state": 0,
-                    "message": f"Ошибка валидации данных: {serializer.errors}"
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            validated_data = serializer.validated_data
-
-            # Обновляем основные поля
-            for field in ['beauty_title', 'title', 'other_titles', 'connect']:
-                if field in validated_data:
-                    setattr(pereval, field, validated_data[field])
-
-            # Обновляем уровни сложности
-            if 'level' in validated_data:
-                level_data = validated_data['level']
-                for season in ['winter', 'spring', 'summer', 'autumn']:
-                    if season in level_data:
-                        setattr(pereval, season, level_data[season])
-
-            # Обновляем координаты
-            if 'coords' in validated_data:
-                coords_data = validated_data['coords']
-                for coord in ['latitude', 'longitude', 'height']:
-                    if coord in coords_data:
-                        setattr(pereval.coords, coord, coords_data[coord])
-                pereval.coords.save()
-
-            # Обновляем изображения
-            if 'images' in validated_data:
-                # Удаляем старые изображения
-                old_images = pereval.images.all()
-                for old_image in old_images:
-                    old_image.image.delete()
-                    old_image.delete()
-
-                # Создаем новые изображения
-                for image_data in validated_data['images']:
-                    image_as_is = PerevalImageAsIs.objects.create(
-                        title=image_data['title'],
-                        img=image_data['data']
-                    )
-                    PerevalImage.objects.create(
-                        pereval=pereval,
-                        image=image_as_is
-                    )
-
-            # Обновляем время изменения
-            from django.utils import timezone
-            pereval.date_added = timezone.now()
-            pereval.save()
-
-            return Response({
-                "state": 1,
-                "message": "Запись успешно обновлена"
-            }, status=status.HTTP_200_OK)
-
-        except PerevalAdded.DoesNotExist:
-            return Response({
-                "state": 0,
-                "message": "Перевал не найден"
-            }, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({
-                "state": 0,
-                "message": f"Ошибка при обновлении записи: {str(e)}"
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
-
-
 

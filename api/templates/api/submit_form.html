@@ -137,8 +137,8 @@
                 <h3>Основная информация</h3>
                 <div class="inline-group">
                     <div>
-                        <label for="beautyTitle">Приставка к названию:</label>
-                        <input type="text" id="beautyTitle" name="beautyTitle" value="пер. ">
+                        <label for="beauty_title">Приставка к названию:</label>
+                        <input type="text" id="beauty_title" name="beauty_title" value="пер. ">
                     </div>
                     <div>
                         <label for="title">Название:</label>
@@ -276,7 +276,7 @@
 
             // Создаем правильную JSON структуру
             const jsonData = {
-                beautyTitle: document.getElementById('beautyTitle').value,
+                beauty_title: document.getElementById('beauty_title').value,
                 title: document.getElementById('title').value,
                 other_titles: document.getElementById('other_titles').value,
                 connect: document.getElementById('connect').value,
@@ -368,7 +368,7 @@
                     // Показываем отправленные данные с названиями изображений (без данных файлов)
                     const imageInfo = jsonData.images ? jsonData.images.map(img => ({
                         title: img.title,
-                        size: `${Math.round(img.data.length / 1024)} KB`
+                        data: `foto size=${Math.round(img.data.length / 1024)} KB`
                     })) : [];
 
                     const sentDataWithoutImages = {

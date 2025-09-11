@@ -49,11 +49,6 @@ class PerevalAdded(models.Model):
         choices=[('new', 'Новый'),('pending', 'На рассмотрении'),('accepted', 'Принят'),('rejected', 'Отклонен'),],
         default='new'
     )
-    """Модель уровня сложности"""
-    winter = models.CharField(max_length=10, blank=True)
-    spring = models.CharField(max_length=10, blank=True)
-    summer = models.CharField(max_length=10, blank=True)
-    autumn = models.CharField(max_length=10, blank=True)
 
     """Связи с другими моделями"""
     user = models.ForeignKey(PerevalUser, on_delete=models.CASCADE)  # =1
