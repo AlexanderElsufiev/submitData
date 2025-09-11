@@ -145,14 +145,15 @@ dd=Fstr()
 # for zn in rows:
 #     print(f'zn={zn}')
 #     print('---------------------------------------------------')
-print('============================')
-rez = dd.zapusk_sql_progr('SELECT * from pereval_added')
-# print(f'rez={rez}')
-col=rez['col']
-rows=rez['rows']
-print(f'col={col}')
-for zn in rows:
-    print(f'zn={zn}')
+
+# print('============================')
+# rez = dd.zapusk_sql_progr('SELECT * from pereval_added')
+# # print(f'rez={rez}')
+# col=rez['col']
+# rows=rez['rows']
+# print(f'col={col}')
+# for zn in rows:
+#     print(f'zn={zn}')
 
 
 #
@@ -166,16 +167,17 @@ for zn in rows:
 #     print(f'zn={zn}')
 # #
 # #
-print('============================')
-rez = dd.zapusk_sql_progr('SELECT * from pereval_coords')
-# print(f'rez={rez}')
-col=rez['col']
-rows=rez['rows']
-print(f'col={col}')
-for zn in rows:
-    print(f'zn={zn}')
-# #
-print('============================')
+
+# print('============================')
+# rez = dd.zapusk_sql_progr('SELECT * from pereval_coords')
+# # print(f'rez={rez}')
+# col=rez['col']
+# rows=rez['rows']
+# print(f'col={col}')
+# for zn in rows:
+#     print(f'zn={zn}')
+# # #
+# print('============================')
 
 # АПДЕЙТ НЕСКОЛЬКИХ СТРОК СТАТУСОВ
 # rez = dd.zapusk_sql_progr("update  pereval_added set status='pending' where id<6; ")
@@ -246,7 +248,7 @@ rows=rez['rows']
 print(f'col={col}')
 for zn in rows:
     # if zn[0] in (12, 14, 15,16,17,33,34):
-    if zn[0] in (35,):
-        # print(f'zn={zn}')
-        print(f'zn=={(zn[0],zn[1],"imggg")}')
-        print('---------------------------------------------------')
+    # if zn[0] in (35,):
+    # print(f'zn={zn}')
+    print(f'zn=={(zn[0],zn[1],"imggg")}')
+    print('---------------------------------------------------')
