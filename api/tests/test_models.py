@@ -4,7 +4,7 @@
 
 from django.test import TestCase
 from ..models import PerevalAdded, PerevalUser, PerevalCoords, PerevalImage, PerevalImageAsIs
-from datetime import datetime
+from django.utils import timezone
 
 
 class PerevalUserModelTest(TestCase):
@@ -85,7 +85,8 @@ class PerevalAddedModelTest(TestCase):
             title="болото",
             other_titles="другое название",
             connect="между ладогой и морем",
-            add_time=datetime.now(),
+            # add_time=datetime.now(),
+            add_time=timezone.now(),
             winter="1А",
             spring="1Б",
             summer="1А",
@@ -104,22 +105,12 @@ class PerevalAddedModelTest(TestCase):
         pereval = PerevalAdded.objects.create(
             beauty_title="Питер",
             title="болото",
-            add_time=datetime.now(),
+            add_time=timezone.now(),
             user=self.user,
             coords=self.coords
         )
         self.assertEqual(str(pereval), "Питер болото")
 
-    def test_pereval_status_choices(self):
-        """Тест статусов перевала"""
-        pereval = PerevalAdded.objects.create(
-            title="Тест",
-            add_time=datetime.now(),
-            user=self.user,
-            coords=self.coords,
-            status='pending2'
-        ) # непонятка, принимает запрещённое значение статуса. проверить потом!!!
-        self.assertEqual(pereval.status, 'pending2')
 
 
 class PerevalImageModelsTest(TestCase):
@@ -130,7 +121,7 @@ class PerevalImageModelsTest(TestCase):
         self.coords = PerevalCoords.objects.create()
         self.pereval = PerevalAdded.objects.create(
             title="Тестовый перевал",
-            add_time=datetime.now(),
+            add_time=timezone.now(),
             user=self.user,
             coords=self.coords
         )

@@ -380,16 +380,12 @@
                     responseText.textContent = JSON.stringify(data, null, 2);
                 }
 
-
             } catch (error) {
                 responseDiv.className = 'response error';
                 responseDiv.style.display = 'block';
                 responseText.textContent = 'Ошибка при отправке запроса: ' + error.message;
             }
         });
-
-
-
 
     </script>
 </body>

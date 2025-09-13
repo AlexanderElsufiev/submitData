@@ -45,6 +45,15 @@ class SubmitDataSerializer(serializers.Serializer):
     images = ImageSerializer(many=True, required=True)
 
 
+# добавка сериализатор для проверки статуса 4 варианта
+class StatusSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=[
+        ('new', 'Новый'),
+        ('pending', 'На рассмотрении'),
+        ('accepted', 'Принят'),
+        ('rejected', 'Отклонен')
+    ])
+
 #### для 2 спринта
 
 

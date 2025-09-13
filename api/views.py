@@ -54,7 +54,7 @@ class SubmitDataAPIView(APIView):
                 title=request.data.get('title', ''),
                 other_titles=request.data.get('other_titles', ''),
                 connect=request.data.get('connect', ''),
-                add_time=datetime.now(),
+                add_time=timezone.now(), # add_time=datetime.now(), # замена для хорошего тестирования без предупреждений
                 winter=level_data.get('winter', ''),
                 spring=level_data.get('spring', ''),
                 summer=level_data.get('summer', ''),
@@ -248,7 +248,7 @@ class PerevalDetailUpdateAPIView(APIView):
                     )
 
             # Обновляем время изменения
-            from django.utils import timezone
+
             pereval.date_added = timezone.now()
             pereval.save()
 
