@@ -9,9 +9,9 @@ class UserSerializer(serializers.Serializer):
     """Сериализатор для данных пользователя (ФИО, email, телефон)"""
     email = serializers.EmailField(required=False, allow_blank=True)
     phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
-    fam = serializers.CharField(max_length=20, required=False, allow_blank=True)
-    name = serializers.CharField(max_length=20, required=False, allow_blank=True)
-    otc = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    fam = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    name = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    otc = serializers.CharField(max_length=100, required=False, allow_blank=True)
 
 class CoordsSerializer(serializers.Serializer):
     """Сериализатор для координат перевала (широта, долгота, высота)"""
@@ -45,8 +45,8 @@ class SubmitDataSerializer(serializers.Serializer):
     images = ImageSerializer(many=True, required=True)
 
 
-# добавка сериализатор для проверки статуса 4 варианта
 class StatusSerializer(serializers.Serializer):
+    """ Сериализатор для проверки всех возможных типов статусов """
     status = serializers.ChoiceField(choices=[
         ('new', 'Новый'),
         ('pending', 'На рассмотрении'),
